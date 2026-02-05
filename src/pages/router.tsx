@@ -11,33 +11,39 @@ import { VerifyEmail } from './verify/VerifyEmail'
 
 export const router = createBrowserRouter([
 	{
-		element: <RedirectIfAuth />,
+		path: '/',
 		children: [
 			{
-				path: PUBLIC_PAGES.LOGIN,
-				element: <Login />
+				element: <RedirectIfAuth />,
+				children: [
+					{
+						path: PUBLIC_PAGES.LOGIN,
+						element: <Login />,
+					},
+					{
+						path: PUBLIC_PAGES.REGISTER,
+						element: <Register />,
+					},
+				],
 			},
 			{
-				path: PUBLIC_PAGES.REGISTER,
-				element: <Register />
-			}
-		]
-	},
-	{
-		element: <ProtectedRoutes />,
-		children: [
-			{
-				path: PUBLIC_PAGES.HOME,
-				element: <HomePage />
+				element: <ProtectedRoutes />,
+				children: [
+					{
+						index: true,
+						element: <HomePage />,
+					},
+					{
+						path: PUBLIC_PAGES.VERIFY_EMAIL,
+						element: <VerifyEmail />,
+					},
+				],
 			},
-			{
-				path: '/verify/:token',
-				element: <VerifyEmail />
-			}
-		]
+		],
 	},
 	{
 		path: '*',
-		element: <div>404 not found!</div>
-	}
+		element: <div>404 not found</div>,
+	},
 ])
+
