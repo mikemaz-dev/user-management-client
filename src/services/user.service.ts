@@ -14,9 +14,10 @@ class UserService {
 		})
 	}
 
-	async verifyEmail(token: string) {
-		return axiosClassic.get(`${this._BASE_URL}/verify/${token}`)
+	async verifyUser (userId: string) {
+		axiosClassic.post(`${this._BASE_URL}/${userId}/verify`)
 	}
+
 }
 
 export default new UserService()

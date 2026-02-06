@@ -24,6 +24,8 @@ export function HomePage() {
 		unblockSelected,
 		deleteSelected,
 		deleteAllUnverified,
+		verifyUser,
+		isVerifyLoading,
 		logout
 	} = useUserActions()
 
@@ -114,6 +116,20 @@ export function HomePage() {
 								<td className={cn(user.status === 'BLOCKED' && 'opacity-50')}>
 									{formatLastSeen(user.lastSeen)}
 								</td>
+								<td>
+								{user.status === 'UN_VERIFIED' ? (
+									<button
+										className='btn btn-sm btn-outline-success'
+										onClick={() => verifyUser(user.id)}
+										disabled={isVerifyLoading}
+									>
+										Emulate verification
+									</button>
+								) : (
+									user.status
+								)}
+							</td>
+
 							</tr>
 						))}
 					</tbody>

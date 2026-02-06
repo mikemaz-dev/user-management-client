@@ -12,6 +12,7 @@ import { useLastSeen } from './useLastSeen'
 import { useUsers } from './useUsers'
 import { COOKIE_OPTIONS } from '@/constants'
 import authService, { EnumTokens } from '@/services/auth/auth.service'
+import userService from '@/services/user.service'
 
 export function useUserActions() {
 	const queryClient = useQueryClient()
@@ -84,6 +85,18 @@ export function useUserActions() {
 		}
 	}
 
+	const { mutate: verifyUser, isPending: isVerifyLoading } = useMutation({
+		mutationFn: (userId: string) => userService.verifyUser(userId),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['users'] })
+		},
+		onError: err => {
+			console.error(err)
+			alert('Failed to verify user')
+		},
+	})
+
+
 	const { mutate: logout, isPending: isLogoutLoading } = useMutation({
 		mutationFn: () => authService.logout(),
 		onSuccess: () => {
@@ -115,6 +128,8 @@ export function useUserActions() {
 		unblockSelected: () => updateSelectedStatus('ACTIVE'),
 		deleteSelected,
 		deleteAllUnverified,
+		verifyUser,
+		isVerifyLoading,
 		logout
 	}
 }
