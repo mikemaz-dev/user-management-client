@@ -1,19 +1,36 @@
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
-import axios from 'axios'
 import { useTransition } from 'react'
-import { SubmitHandler, useForm } from 'react-hook-form'
+import axios from 'axios'
 
 import authService from '@/services/auth/auth.service'
-import { IFormData } from '@/types/user.types'
+import { loginSchema, registerSchema } from '@/schemas/auth.schema'
+
+export type TAuthForm = {
+	name?: string
+	email: string
+	password: string
+}
 
 export function useAuthForm(isLogin?: boolean) {
-	const { register, handleSubmit, reset } = useForm<IFormData>()
+	const schema = isLogin ? loginSchema : registerSchema
+
+	const {
+		register,
+		handleSubmit,
+		formState: { errors, isSubmitting },
+		reset,
+	} = useForm<TAuthForm>({
+		resolver: zodResolver(schema),
+	})
 
 	const [isPending, startTransition] = useTransition()
 
-	const { mutate: mutateLogin, isPending: isLoginPending } = useMutation({
-		mutationKey: ['login'],
-		mutationFn: (data: IFormData) => authService.main('login', data),
+	const mutation = useMutation({
+		mutationKey: [isLogin ? 'login' : 'register'],
+		mutationFn: (data: TAuthForm) =>
+			authService.main(isLogin ? 'login' : 'register', data),
 		onSuccess() {
 			startTransition(() => {
 				reset()
@@ -22,37 +39,15 @@ export function useAuthForm(isLogin?: boolean) {
 		},
 		onError(error) {
 			if (axios.isAxiosError(error)) {
-				console.error(error.response?.data?.message)
+				alert(error.response?.data?.message ?? 'Something went wrong')
 			}
-		}
-	})
-
-	const { mutate: mutateRegister, isPending: isRegisterPending } = useMutation({
-		mutationKey: ['register'],
-		mutationFn: (data: IFormData) => authService.main('register', data),
-		onSuccess() {
-			startTransition(() => {
-				reset()
-				window.location.href = '/'
-			})
 		},
-		onError(error) {
-			if (axios.isAxiosError(error)) {
-				console.error(error.response?.data?.message)
-			}
-		}
 	})
-
-	const onSubmit: SubmitHandler<IFormData> = data => {
-		isLogin ? mutateLogin(data) : mutateRegister(data)
-	}
-
-	const isLoading = isPending || isLoginPending || isRegisterPending
 
 	return {
 		register,
-		handleSubmit,
-		onSubmit,
-		isLoading
+		onSubmit: handleSubmit(data => mutation.mutate(data)),
+		errors,
+		isLoading: isPending || mutation.isPending || isSubmitting,
 	}
 }
