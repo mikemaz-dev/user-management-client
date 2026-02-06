@@ -2,6 +2,7 @@ import { API_URL } from '@/constants'
 import { getAccessToken } from '@/services/auth/auth.helper'
 import axios, { CreateAxiosDefaults } from 'axios'
 import { getContentType } from './api.helper'
+import { doLogout } from '@/utils/doLogout'
 
 const axiosOptions: CreateAxiosDefaults = {
 	baseURL: API_URL,
@@ -18,3 +19,15 @@ axiosClassic.interceptors.request.use(config => {
 
 	return config
 })
+
+axiosClassic.interceptors.response.use(
+  res => res,
+  err => {
+    if (axios.isAxiosError(err)) {
+      if (err.response?.status === 403) {
+        doLogout()
+      }
+    }
+    return Promise.reject(err)
+  }
+)

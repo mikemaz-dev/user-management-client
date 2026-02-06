@@ -2,24 +2,23 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { jwtDecode } from 'jwt-decode'
 import { useMemo, useState } from 'react'
 import { useCookies } from 'react-cookie'
-import { useNavigate } from 'react-router-dom'
 
 import { getSelectedIds } from '@/utils/getSelectedIds'
 
 import { axiosClassic } from '@/api/axios'
 
-import { useLastSeen } from './useLastSeen'
-import { useUsers } from './useUsers'
 import { COOKIE_OPTIONS } from '@/constants'
 import authService, { EnumTokens } from '@/services/auth/auth.service'
 import userService from '@/services/user.service'
+import { doLogout } from '@/utils/doLogout'
+import { useLastSeen } from './useLastSeen'
+import { useUsers } from './useUsers'
 
 export function useUserActions() {
 	const queryClient = useQueryClient()
 	const [selected, setSelected] = useState<Record<string, boolean>>({})
 	const [selectAll, setSelectAll] = useState(false)
 	const [cookies, removeCookie] = useCookies([EnumTokens.ACCESS_TOKEN])
-	const navigate = useNavigate()
 
 	useLastSeen()
 
@@ -99,19 +98,8 @@ export function useUserActions() {
 
 	const { mutate: logout, isPending: isLogoutLoading } = useMutation({
 		mutationFn: () => authService.logout(),
-		onSuccess: () => {
-			removeCookie(EnumTokens.ACCESS_TOKEN, COOKIE_OPTIONS)
-			const cookieName = EnumTokens.ACCESS_TOKEN
-			document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`
-			if (COOKIE_OPTIONS?.path) {
-				document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${COOKIE_OPTIONS.path};`
-			}
-			queryClient.clear()
-			navigate('/login', { replace: true })
-		},
-		onError: error => {
-			console.error('Logout failed:', error)
-		}
+		onSuccess: doLogout,
+		onError: error => console.error('Logout failed:', error),
 	})
 
 	return {

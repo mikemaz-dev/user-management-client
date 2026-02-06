@@ -65,6 +65,8 @@ export function HomePage() {
 
 	const checkboxId = useMemo(() => getUniqIdValue(), [])
 
+	
+
 	if (isLoading) return <div className='container py-5'>Loading...</div>
 
 	return (
