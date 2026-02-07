@@ -2,16 +2,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { jwtDecode } from 'jwt-decode'
 import { useMemo, useState } from 'react'
 import { useCookies } from 'react-cookie'
-
 import { getSelectedIds } from '@/utils/getSelectedIds'
 import { axiosClassic } from '@/api/axios'
 import { COOKIE_OPTIONS } from '@/constants'
 import authService, { EnumTokens } from '@/services/auth/auth.service'
 import userService from '@/services/user.service'
-import { doLogout } from '@/utils/doLogout'
 import { useLastSeen } from './useLastSeen'
 import { useUsers } from './useUsers'
-import { IUser } from '@/types/user.types'
 
 export function useUserActions() {
 	const queryClient = useQueryClient()
@@ -23,13 +20,12 @@ export function useUserActions() {
 
 	const accessToken = cookies[EnumTokens.ACCESS_TOKEN]
 	const isAuthenticated = typeof accessToken === 'string' && accessToken.length > 0
-	const {  data: users = [], isLoading } = useUsers(undefined, isAuthenticated)
+	const { data: users = [], isLoading } = useUsers(undefined, isAuthenticated)
 
 	const currentUserId = useMemo(() => {
-		const token = cookies[EnumTokens.ACCESS_TOKEN]
-		if (typeof token !== 'string') return null
-		try { return jwtDecode<{ id: string }>(token).id } catch { return null }
-	}, [cookies])
+		if (typeof accessToken !== 'string') return null
+		try { return jwtDecode<{ id: string }>(accessToken).id } catch { return null }
+	}, [accessToken])
 
 	const toggleSelect = (id: string) => setSelected(prev => ({ ...prev, [id]: !prev[id] }))
 
@@ -47,6 +43,7 @@ export function useUserActions() {
 
 	const handleSelfLogout = () => {
 		removeCookie(EnumTokens.ACCESS_TOKEN, COOKIE_OPTIONS)
+		document.cookie = `${EnumTokens.ACCESS_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`
 		window.location.href = '/login'
 	}
 
@@ -81,13 +78,12 @@ export function useUserActions() {
 	}
 
 	const deleteAllUnverified = async () => {
-		const currentUser = users.find((u: IUser) => u.id === currentUserId)
-		const isCurrentUserUnverified = currentUser?.status === 'UN_VERIFIED'
-		
 		try {
 			await deleteUnverifiedUsers()
 			
-			if (isCurrentUserUnverified) {
+			// Проверяем текущего пользователя
+			const currentUser = users.find(u => u.id === currentUserId)
+			if (currentUser?.status === 'UN_VERIFIED') {
 				handleSelfLogout()
 			}
 			
@@ -108,7 +104,11 @@ export function useUserActions() {
 
 	const { mutate: logout, isPending: isLogoutLoading } = useMutation({
 		mutationFn: () => authService.logout(),
-		onSuccess: doLogout,
+		onSuccess: () => {
+			removeCookie(EnumTokens.ACCESS_TOKEN, COOKIE_OPTIONS)
+			document.cookie = `${EnumTokens.ACCESS_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`
+			window.location.href = '/login'
+		},
 		onError: error => console.error('Logout failed:', error),
 	})
 
