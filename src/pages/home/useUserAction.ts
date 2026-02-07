@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { jwtDecode } from 'jwt-decode'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useCookies } from 'react-cookie'
 import { getSelectedIds } from '@/utils/getSelectedIds'
 import { axiosClassic } from '@/api/axios'
@@ -20,7 +20,14 @@ export function useUserActions() {
 
 	const accessToken = cookies[EnumTokens.ACCESS_TOKEN]
 	const isAuthenticated = typeof accessToken === 'string' && accessToken.length > 0
-	const { data: users = [], isLoading } = useUsers(undefined, isAuthenticated)
+	const { data: users = [], isLoading, isError } = useUsers(undefined, isAuthenticated)
+
+	useEffect(() => {
+  if (isError && isAuthenticated) {
+    removeCookie(EnumTokens.ACCESS_TOKEN, COOKIE_OPTIONS)
+    window.location.href = '/login'
+  }
+}, [isError, isAuthenticated])
 
 	const currentUserId = useMemo(() => {
 		if (typeof accessToken !== 'string') return null
